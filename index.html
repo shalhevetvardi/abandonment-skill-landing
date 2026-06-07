@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>מצב נטישה — סימולטור לקוחות לדפי נחיתה | אִימפּרוּב</title>
+  <meta name="description" content="סקיל חינמי ל-Claude שבונה לקוח סינתטי, נכנס לדף הנחיתה שלך דרך העיניים שלו, ומוצא את השורה שבה הוא נוטש.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/bold/style.css">
+
+  <style>
+    :root {
+      --gold: #FFD747;
+      --navy: #14093B;
+      --mid-navy: #1F1341;
+      --pink: #FF6DB3;
+      --green: #6BD22B;
+      --purple: #6762FF;
+      --teal: #05905D;
+      --wine: #A52756;
+      --white: #FFFFFF;
+      --body-text: #333333;
+      --muted: #706A70;
+      --light-mint: #E0F5ED;
+      --light-blue: #F1F8FF;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
+
+    body {
+      font-family: 'Rubik', Arial, sans-serif;
+      background: var(--white);
+      color: var(--navy);
+      line-height: 1.6;
+      direction: rtl;
+      text-align: right;
+      overflow-x: hidden;
+    }
+
+    h1, h2, h3 {
+      font-family: 'Rubik', sans-serif;
+      color: var(--navy);
+      line-height: 1.15;
+    }
+
+    p { color: var(--body-text); font-size: 1.05rem; line-height: 1.9; }
+    a { color: var(--navy); text-decoration: none; }
+
+    .wrap {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* ─── Top Nav ─── */
+    .top-nav {
+      background: var(--white);
+      padding: 14px 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 1px 0 rgba(20, 9, 59, 0.06);
+    }
+    .top-nav-inner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .nav-brand {
+      display: flex;
+      align-items: center;
+    }
+    .nav-brand img { height: 30px; width: auto; }
+    .nav-cta {
+      display: inline-block;
+      padding: 9px 22px;
+      background: var(--mid-navy);
+      color: var(--white);
+      font-size: 0.85rem;
+      font-weight: 700;
+      border-radius: 50px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .nav-cta:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(31, 19, 65, 0.25);
+    }
+
+    /* ─── Hero ─── */
+    .hero {
+      background: var(--gold);
+      padding: 60px 0 80px;
+      position: relative;
+    }
+
+    .hero-content {
+      max-width: 620px;
+    }
+
+    .hero h1 {
+      font-size: clamp(1.9rem, 5.5vw, 3.4rem);
+      font-weight: 800;
+      line-height: 1.15;
+      margin-bottom: 18px;
+      animation: fadeUp 0.7s ease both;
+    }
+
+    .hero-sub {
+      font-size: clamp(1rem, 2.5vw, 1.15rem);
+      color: var(--navy);
+      opacity: 0.8;
+      line-height: 1.8;
+      margin-bottom: 32px;
+      max-width: 500px;
+      animation: fadeUp 0.7s ease 0.15s both;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      animation: fadeUp 0.7s ease 0.3s both;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ─── Buttons ─── */
+    .btn-dark {
+      display: inline-block;
+      padding: 13px 30px;
+      background: linear-gradient(135deg, var(--mid-navy), #2d1a6b);
+      color: var(--white);
+      font-size: 1rem;
+      font-weight: 700;
+      border-radius: 50px;
+      transition: transform 0.2s, box-shadow 0.2s;
+      text-decoration: none;
+      box-shadow: 0 2px 8px rgba(31, 19, 65, 0.2);
+    }
+    .btn-dark:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(31, 19, 65, 0.35), 0 0 12px rgba(103, 98, 255, 0.15);
+    }
+
+    .btn-outline {
+      display: inline-block;
+      padding: 13px 30px;
+      background: transparent;
+      color: var(--mid-navy);
+      border: 2px solid var(--mid-navy);
+      font-size: 1rem;
+      font-weight: 700;
+      border-radius: 50px;
+      transition: background 0.2s, color 0.2s, transform 0.2s;
+      text-decoration: none;
+    }
+    .btn-outline:hover {
+      background: var(--mid-navy);
+      color: var(--white);
+      transform: translateY(-2px);
+    }
+
+    .btn-gold {
+      display: inline-block;
+      padding: 13px 30px;
+      background: var(--gold);
+      color: var(--navy);
+      font-size: 1rem;
+      font-weight: 700;
+      border-radius: 50px;
+      transition: transform 0.2s, box-shadow 0.2s;
+      text-decoration: none;
+    }
+    .btn-gold:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(255, 215, 71, 0.5);
+    }
+
+    /* ─── Hero decorative shapes — floating ─── */
+    .hero-deco {
+      position: absolute;
+      border-radius: 6px;
+      transform: rotate(45deg);
+      opacity: 0.45;
+    }
+    .hero-deco-1 {
+      width: 64px; height: 64px; background: var(--pink);
+      top: 18%; left: 6%;
+      animation: float1 6s ease-in-out infinite;
+    }
+    .hero-deco-2 {
+      width: 42px; height: 42px; background: var(--purple);
+      bottom: 22%; left: 12%;
+      animation: float2 7s ease-in-out infinite;
+    }
+    .hero-deco-3 {
+      width: 52px; height: 52px; background: var(--teal);
+      top: 55%; left: 2%;
+      animation: float3 8s ease-in-out infinite;
+    }
+
+    @keyframes float1 {
+      0%, 100% { transform: rotate(45deg) translate(0, 0); }
+      50% { transform: rotate(50deg) translate(8px, -12px); }
+    }
+    @keyframes float2 {
+      0%, 100% { transform: rotate(45deg) translate(0, 0); }
+      50% { transform: rotate(40deg) translate(-6px, 10px); }
+    }
+    @keyframes float3 {
+      0%, 100% { transform: rotate(45deg) translate(0, 0); }
+      50% { transform: rotate(52deg) translate(10px, 6px); }
+    }
+
+    @media (max-width: 768px) {
+      .hero-deco-1 { width: 36px; height: 36px; top: auto; bottom: 12%; left: 5%; }
+      .hero-deco-2 { width: 24px; height: 24px; bottom: 6%; left: 22%; }
+      .hero-deco-3 { width: 28px; height: 28px; top: 10%; left: auto; right: 8%; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .hero-deco { animation: none; }
+    }
+
+    /* ─── Wave ─── */
+    .wave-divider {
+      display: block;
+      width: 100%;
+      height: 50px;
+      margin-top: -1px;
+    }
+    @media (min-width: 768px) { .wave-divider { height: 70px; } }
+
+    /* ─── Sections ─── */
+    .section-white { background: var(--white); padding: 64px 0; }
+    .section-blue { background: var(--light-blue); padding: 64px 0; }
+    .section-mint { background: var(--light-mint); padding: 64px 0; }
+    .section-gold-light { background: #FFF9E6; padding: 64px 0; }
+    .section-navy { background: var(--mid-navy); padding: 72px 0; position: relative; overflow: hidden; }
+
+    @media (min-width: 768px) {
+      .section-white, .section-mint { padding: 80px 0; }
+      .section-navy { padding: 96px 0; }
+    }
+
+    .section-title {
+      font-size: clamp(1.5rem, 3.5vw, 2.2rem);
+      font-weight: 800;
+      margin-bottom: 10px;
+    }
+    .section-sub {
+      font-size: 1.05rem;
+      color: var(--body-text);
+      margin-bottom: 40px;
+      max-width: 520px;
+      line-height: 1.8;
+    }
+
+    /* ─── Doors ─── */
+    .doors-grid {
+      display: grid;
+      gap: 16px;
+    }
+    @media (min-width: 640px) {
+      .doors-grid { grid-template-columns: 1fr 1fr; }
+    }
+
+    .door-card {
+      background: var(--white);
+      border-radius: 15px;
+      padding: 32px 24px;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(36, 115, 200, 0.1);
+    }
+    .door-card:hover {
+      transform: translateY(-4px);
+      box-shadow: rgba(0, 0, 0, 0.1) 0px 12px 36px;
+    }
+
+    .door-icon {
+      font-size: 1.5rem;
+      color: var(--mid-navy);
+      margin-bottom: 12px;
+      display: block;
+    }
+
+    .door-card h3 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    .door-card p { font-size: 0.93rem; line-height: 1.8; }
+
+    /* ─── Outcomes ─── */
+    .outcomes-grid {
+      display: grid;
+      gap: 16px;
+    }
+    @media (min-width: 640px) {
+      .outcomes-grid { grid-template-columns: 1fr 1fr 1fr; }
+    }
+
+    .outcome-card {
+      border-radius: 15px;
+      padding: 28px 22px;
+      transition: transform 0.3s ease;
+    }
+    .outcome-card:hover {
+      transform: translateY(-3px);
+    }
+    .outcome-card { background: var(--white); }
+
+    .outcome-icon {
+      font-size: 1.3rem;
+      color: var(--teal);
+      margin-bottom: 10px;
+      display: block;
+    }
+
+    .outcome-card h4 {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: var(--navy);
+    }
+    .outcome-card p { font-size: 0.9rem; line-height: 1.7; }
+
+    /* ─── Usage Examples ─── */
+    .usage-examples {
+      display: grid;
+      gap: 16px;
+    }
+    @media (min-width: 640px) {
+      .usage-examples { grid-template-columns: 1fr 1fr 1fr; }
+    }
+
+    .usage-example {
+      background: var(--white);
+      border-radius: 15px;
+      padding: 24px 20px;
+    }
+
+    .usage-q {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--navy);
+      margin-bottom: 6px;
+      line-height: 1.5;
+    }
+
+    .usage-a {
+      font-size: 0.9rem;
+      color: var(--body-text);
+      line-height: 1.7;
+    }
+
+    /* ─── Install ─── */
+    .install-steps { max-width: 500px; }
+
+    .install-step {
+      display: flex;
+      gap: 14px;
+      align-items: baseline;
+      margin-bottom: 18px;
+    }
+
+    .install-num {
+      flex-shrink: 0;
+      width: 28px;
+      height: 28px;
+      background: var(--gold);
+      color: var(--navy);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      font-weight: 800;
+    }
+
+    .install-step p {
+      font-size: 0.95rem;
+      color: var(--navy);
+      margin: 0;
+    }
+
+    .install-step code {
+      display: inline-block;
+      background: var(--light-blue);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.82rem;
+      color: var(--mid-navy);
+      font-weight: 500;
+      direction: ltr;
+      unicode-bidi: isolate;
+    }
+
+    /* ─── Download Box ─── */
+    .download-box {
+      margin-top: 40px;
+      background: var(--gold);
+      border-radius: 15px;
+      padding: 28px 28px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .download-box h3 {
+      font-size: 1.1rem;
+      font-weight: 800;
+      margin-bottom: 2px;
+    }
+    .download-box p {
+      font-size: 0.85rem;
+      color: var(--navy);
+      opacity: 0.65;
+      margin: 0;
+    }
+
+    /* ─── Tironot CTA ─── */
+    .section-navy h2, .section-navy p { color: var(--white); }
+    .section-navy .section-title { font-size: clamp(1.6rem, 4vw, 2.4rem); }
+    .section-navy .section-sub { color: rgba(255,255,255,0.8); max-width: 540px; margin-inline: auto; }
+
+    .section-navy::before {
+      content: '';
+      position: absolute;
+      width: 300px;
+      height: 300px;
+      background: var(--purple);
+      opacity: 0.08;
+      border-radius: 50%;
+      top: -80px;
+      left: -60px;
+    }
+    .section-navy::after {
+      content: '';
+      position: absolute;
+      width: 200px;
+      height: 200px;
+      background: var(--gold);
+      opacity: 0.06;
+      border-radius: 50%;
+      bottom: -40px;
+      right: -40px;
+    }
+
+    .tironot-center {
+      text-align: center;
+      max-width: 600px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    .tironot-features {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+      margin: 24px 0 32px;
+    }
+    .tironot-features span {
+      padding: 5px 14px;
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 50px;
+      font-size: 0.8rem;
+      color: rgba(255,255,255,0.82);
+      font-weight: 500;
+    }
+
+    /* ─── Footer ─── */
+    footer {
+      background: var(--white);
+      padding: 28px 0;
+      text-align: center;
+    }
+    footer p { font-size: 0.8rem; color: var(--muted); }
+
+    /* ─── Scroll Reveal with blur ─── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(14px);
+      filter: blur(3px);
+      transition: opacity 0.55s ease, transform 0.55s ease, filter 0.55s ease;
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+      filter: blur(0);
+    }
+    .reveal-d1 { transition-delay: 0.08s; }
+    .reveal-d2 { transition-delay: 0.16s; }
+    .reveal-d3 { transition-delay: 0.24s; }
+
+    /* ─── Mobile tweaks ─── */
+    @media (max-width: 480px) {
+      .hero { padding: 44px 0 56px; }
+      .hero h1 { font-size: 1.75rem; }
+      .hero-sub { font-size: 0.95rem; }
+      .btn-dark, .btn-outline, .btn-gold { padding: 12px 24px; font-size: 0.92rem; }
+      .section-title { font-size: 1.4rem; }
+      .door-card { padding: 24px 20px; }
+      .outcome-card { padding: 22px 18px; }
+      .download-box { padding: 22px 20px; flex-direction: column; align-items: stretch; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ═══ Nav ═══ -->
+  <nav class="top-nav">
+    <div class="wrap top-nav-inner">
+      <a href="https://aimprove.co.il" class="nav-brand"><img src="logo-wide.jpg" alt="אִימפּרוּב"></a>
+      <a href="https://wa.me/972515079762?text=אני רוצה לבדוק התאמה לטירונות סוכנים"
+         class="nav-cta" target="_blank" rel="noopener">טירונות סוכנים</a>
+    </div>
+  </nav>
+
+  <!-- ═══ Hero ═══ -->
+  <section class="hero">
+    <div class="hero-deco hero-deco-1"></div>
+    <div class="hero-deco hero-deco-2"></div>
+    <div class="hero-deco hero-deco-3"></div>
+    <div class="wrap">
+      <div class="hero-content">
+        <h1>דף הנחיתה שלך מאבד אנשים.<br>מצב נטישה ימצא איפה.</h1>
+        <p class="hero-sub">סקיל חינמי ל-Claude שבונה לקוח סינתטי מהקהל האמיתי שלך, נכנס לדף דרך העיניים שלו, ומוצא את השורה המדויקת שבה הוא נוטש.</p>
+        <div class="hero-actions">
+          <a href="abandonment-mode.zip" download class="btn-dark">הורדת הסקיל בחינם</a>
+          <a href="#how" class="btn-outline">איך זה עובד?</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Wave -->
+  <svg class="wave-divider" viewBox="0 0 1440 70" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <path fill="#FFD747" d="M0,0 C480,70 960,10 1440,50 L1440,0 L0,0 Z"/>
+  </svg>
+
+  <!-- ═══ Two Doors ═══ -->
+  <section class="section-blue" id="how">
+    <div class="wrap">
+      <h2 class="section-title reveal">מה הסקיל עושה?</h2>
+      <p class="section-sub reveal reveal-d1">לא ביקורת כללית. סימולציה של הלקוח האמיתי שלך — על הדף שלך.</p>
+
+      <div class="doors-grid">
+        <div class="door-card reveal reveal-d1">
+          <i class="ph-bold ph-user-focus door-icon"></i>
+          <h3>בונה לקוח סינתטי</h3>
+          <p>לומד מי הלקוח האמיתי מתוך הדאטה שלך — קבצים, מיילים, מחברים. בונה פרסונה ריאליסטית עם פחדים, התנגדויות ושפה אמיתית.</p>
+        </div>
+        <div class="door-card reveal reveal-d2">
+          <i class="ph-bold ph-crosshair door-icon"></i>
+          <h3>מוצא את שורת הנטישה</h3>
+          <p>נכנס לדף דרך עיני הפרסונה, קורא שורה-שורה, ומסמן בדיוק איפה ולמה הוא נוטש. לא "הדף ארוך מדי" — אלא "בשורה 4 הוא לא מאמין לך".</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ How to Use ═══ -->
+  <section class="section-mint">
+    <div class="wrap">
+      <h2 class="section-title reveal">איך זה עובד?</h2>
+      <p class="section-sub reveal reveal-d1">מדביקים דף נחיתה — והסקיל עושה את השאר.</p>
+
+      <div class="usage-examples">
+        <div class="usage-example reveal reveal-d1">
+          <p class="usage-q">מדביקים את הדף</p>
+          <p class="usage-a">טקסט, HTML, או לינק — הסקיל מבקש גישה לדאטה שלכם כדי לבנות את הפרסונה (באישור).</p>
+        </div>
+        <div class="usage-example reveal reveal-d2">
+          <p class="usage-q">הלקוח הסינתטי נכנס</p>
+          <p class="usage-a">הוא קורא את הדף שורה-שורה, מגיב בזמן אמת, ומסמן את הרגע המדויק שבו הוא נוטש.</p>
+        </div>
+        <div class="usage-example reveal reveal-d3">
+          <p class="usage-q">שכתוב + אימות</p>
+          <p class="usage-a">הסקיל משכתב את מה שנפל, ומריץ את הגרסה החדשה שוב על אותו לקוח סינתטי — לוידוא שהתיקון עובד.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ What Pixel Creates ═══ -->
+  <section class="section-white" style="background: var(--white)">
+    <div class="wrap">
+      <h2 class="section-title reveal">מה מקבלים בסוף?</h2>
+      <p class="section-sub reveal reveal-d1">לא רק "הדף ארוך מדי". תוצר עם שורות מדויקות.</p>
+
+      <div class="outcomes-grid">
+        <div class="outcome-card reveal reveal-d1">
+          <i class="ph-bold ph-map-pin outcome-icon"></i>
+          <h4>נקודת הנטישה המדויקת</h4>
+          <p>השורה, המשפט, הרגע שבו הלקוח אומר "זה לא בשבילי" — עם הסבר פסיכולוגי למה.</p>
+        </div>
+        <div class="outcome-card reveal reveal-d2">
+          <i class="ph-bold ph-pencil-line outcome-icon"></i>
+          <h4>שכתוב מוכן</h4>
+          <p>לא רק אבחנה — גרסה משוכתבת של הקטע שנפל, מותאמת לפרסונה הספציפית.</p>
+        </div>
+        <div class="outcome-card reveal reveal-d3">
+          <i class="ph-bold ph-check-circle outcome-icon"></i>
+          <h4>אימות על אותו לקוח</h4>
+          <p>הגרסה החדשה עוברת בדיקה חוזרת מול אותה פרסונה — לוידוא שהתיקון באמת עובד.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ Install + Download ═══ -->
+  <section class="section-gold-light">
+    <div class="wrap">
+      <h2 class="section-title reveal">התקנה תוך דקה</h2>
+
+      <div class="install-steps">
+        <div class="install-step reveal reveal-d1">
+          <div class="install-num">1</div>
+          <p>הורידו את ה-ZIP</p>
+        </div>
+        <div class="install-step reveal reveal-d2">
+          <div class="install-num">2</div>
+          <p>ב-Claude: <code>Customize</code> ← <code>Upload Skill</code></p>
+        </div>
+        <div class="install-step reveal reveal-d3">
+          <div class="install-num">3</div>
+          <p>זהו. מדביקים דף נחיתה ואומרים "תבדוק לי" — הסקיל נכנס לפעולה.</p>
+        </div>
+      </div>
+
+      <div class="download-box reveal">
+        <div>
+          <h3>Abandonment Mode</h3>
+          <p>SKILL.md + references/copywriting.md</p>
+        </div>
+        <a href="abandonment-mode.zip" download class="btn-dark">הורדה</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ Tironot ═══ -->
+  <section class="section-navy" style="background: var(--wine)">
+    <div class="wrap">
+      <div class="tironot-center">
+        <h2 class="section-title reveal">מצב נטישה הוא רק ההתחלה.<br>הספרייה המלאה — בטירונות סוכנים.</h2>
+        <p class="section-sub reveal reveal-d1">עוד סקילים שמשנים את הדרך שבה אתם עובדים עם Claude — חשיבה עמוקה, מו"מ, reverse engineering, ניתוח אנשים. כולם חלק מהספרייה שנפתחת בתוכנית טירונות סוכנים של אִימפּרוּב.</p>
+
+        <div class="tironot-features reveal reveal-d2">
+          <span>14 שלבים</span>
+          <span>מסמך UX מלא</span>
+          <span>אסטרטגיית רכיבים</span>
+          <span>מסעות שימוש</span>
+          <span>זהות ויזואלית שמורה</span>
+          <span>רספונסיב + נגישות</span>
+        </div>
+
+        <a href="https://wa.me/972515079762?text=אני רוצה לבדוק התאמה לטירונות סוכנים"
+           class="btn-gold reveal reveal-d3" target="_blank" rel="noopener">הגשת מועמדות לטירונות סוכנים</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ Footer ═══ -->
+  <footer>
+    <div class="wrap">
+      <p>אִימפּרוּב © 2026</p>
+    </div>
+  </footer>
+
+  <script>
+    // Scroll reveal
+    const reveals = document.querySelectorAll('.reveal');
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('visible');
+          io.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+    reveals.forEach(el => io.observe(el));
+
+  </script>
+
+</body>
+</html>
